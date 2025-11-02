@@ -1,0 +1,14 @@
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: ecomerce_user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: ecomerce_db
+      PGDATA: /var/lib/postgresql/18/docker
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+volumes:
+  postgres_data:
