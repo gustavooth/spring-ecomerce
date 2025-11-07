@@ -1,0 +1,6 @@
+.admin-container {
+    display: flex;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    justify-content: center;
+}

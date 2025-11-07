@@ -1,0 +1,136 @@
+.index-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-banner {
+    width: 100%;
+    max-height: 400px;
+    margin-bottom: 20px;
+}
+
+.index-sections-container {
+    width: 100%;
+    max-width: 1500px;
+}
+
+.section-title {
+    color: #1c1729;
+    padding-bottom: 20px;
+}
+
+.products-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.product {
+    display: flex;
+    flex-direction: column;
+    width: 280px;
+    height: auto;
+    text-decoration: none;
+}
+
+.pr-txt {
+    font-family: 'Open Sans', sans-serif;
+    color: black;
+    font-weight: 400;
+}
+
+.pr-bold {
+    font-family: 'Open Sans', sans-serif;
+    color: black;
+    font-weight: 600;
+}
+
+.pr-img-container {
+    width: 100%;
+    padding: 10px;
+}
+
+.pr-img {
+    width: 100%;
+    border-style: solid;
+    border-radius: 18px;
+    border-width: 0px;
+}
+
+.pr-title {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.pr-lines {
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+}
+
+.pr-line {
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.pr-price-box {
+    display: flex;
+}
+
+.pr-real {
+    font-size: 12px;
+    padding-top: 4px;
+    font-weight: 500;
+}
+
+.pr-price {
+    font-size: 24px;
+}
+
+.pr-comma {
+    color: white;
+    font-size: 1px;
+}
+
+.pr-cents {
+    font-size: 12px;
+    padding-top: 4px;
+}
+
+.pr-old-box {
+    display: flex;
+    justify-content: flex-end;
+    flex-direction: column;
+    padding-bottom: 3px;
+    padding-left: 4px;
+}
+
+.pr-price-old {
+    color: rgb(35, 35, 35);
+    font-size: 14px;
+    text-decoration: line-through;
+}
+
+.pr-promotion-box {
+    width: auto;
+    height: auto;
+    background-color: black;
+    padding: 1px 5px 1px 5px;
+    margin: 2px;
+    margin-right: 5px;
+    border-width: 0px;
+    border-radius: 5px;
+}
+
+.pr-promotion-icon {
+    margin: 2px;
+    font-size: 18px;
+}
+
+.pr-promotion-txt {
+    font-size: 15px;
+}

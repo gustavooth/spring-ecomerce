@@ -1,0 +1,184 @@
+.adm-fm-container {
+    margin-top: 20px;
+    width: 100%;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.adm-fm-search-container {
+    display: flex;
+    width: 60%;
+    height: 30px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.adm-fm-search {
+    width: 100%;
+    height: 100%;
+    color: black;
+    border-style: solid;
+    border-color: rgb(88, 88, 88);
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 1px;
+    border-right-width: 0px;
+    padding: 1px;
+    padding-left: 16px;
+    outline: none;
+    background-color: white;
+}
+
+.adm-fm-search-rigth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    width: 40px;
+    height: 100%;
+    border-style: solid;
+    border-color: rgb(88, 88, 88);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-left-width: 0px;
+    border-right-width: 1px;
+    background-color: white;
+}
+
+.adm-fm-search-btn {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    background-color: #0096b5;
+    border-width: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.adm-fm-top-buttons {
+    width: auto;
+    height: 100%;
+    margin-left: 10px;
+    margin-right: 5px;
+    display: flex;
+}
+
+.adm-fm-top-button {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    padding-right: 5px;
+}
+
+.adm-fm-top-icon {
+    color: #0096b5;
+    font-size: 26px;
+}
+
+.adm-fm-upload-container {
+    width: 60%;
+    height: auto;
+}
+
+.adm-fm-upload {
+    width: 100%;
+    height: auto;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+}
+
+.adm-fm-upload-left {
+    margin-left: 5px;
+}
+
+.adm-fm-upload-right {
+    margin-left: 5px;
+}
+
+.adm-fm-upload-right progress {
+    height: 20px;
+}
+
+.adm-fm-list-container {
+    width: 60%;
+    height: auto;
+    background-color: #fcfcfc;
+    border-style: solid;
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: #ada9b9;
+    box-shadow: 0 2px 5px 0 rgba(176, 179, 179, 0.5);
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.adm-fm-ul {
+    display: flex;
+    flex-direction: column;
+}
+
+.adm-fm-li {
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+}
+
+.adm-fm-li:hover {
+    background-color: #0097b540;
+}
+
+.adm-fm-li-left {
+    height: 100%;
+    width: auto;
+}
+
+.adm-fm-li-midle {
+    height: 100%;
+    width: 100%;
+}
+
+.adm-fm-li-right {
+    display: flex;
+    height: 100%;
+    width: auto;
+}
+
+.adm-fm-li-icon-box {
+    display: flex;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    text-decoration: none;
+    margin-right: 5px;
+}
+
+.adm-fm-li-icon {
+    font-size: 25px;
+    color: #1c1729;
+}
+
+.adm-fm-li-name-box {
+    padding-left: 10px;
+    width: 100%;
+    height: 25px;
+}
+
+.adm-fm-li-name {
+    font-size: 18px;
+}

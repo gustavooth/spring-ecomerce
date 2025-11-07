@@ -1,0 +1,35 @@
+.index-container {
+    display: flex;
+    justify-content: center;
+}
+
+.items-container {
+    width: 1160px;
+    display: flex;
+}
+
+.item-box {
+    width: 250px;
+    height: 250px;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: var(--color-purple);
+    border-style: solid;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    margin: 20px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.item-box-icon {
+    font-size: 128px;
+    color: var(--color-blue);
+}
+
+.item-box-text {
+    color: var(--color-purple);
+    font-size: 22px;
+}

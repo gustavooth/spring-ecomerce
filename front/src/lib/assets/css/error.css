@@ -1,0 +1,36 @@
+.error-text {
+    color: #1c1729;
+    font-family: 'Open Sans', sans-serif;
+}
+
+.error-text-bold {
+    color: #1c1729;
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 600;
+}
+
+.error-main-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: calc(100vh - 80px);
+}
+
+.error-box {
+    width: 400px;
+    height: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.error-box p {
+    margin-top: 5px;
+}
+
+.main-btn-purple {
+    margin-top: 10px;
+}
