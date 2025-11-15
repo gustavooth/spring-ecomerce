@@ -13,6 +13,8 @@ export const API_ENDPOINTS = {
     LOGGOUT: "/auth/logout",
   },
   SESSION_STATE: "/session_state",
+  INDEX: "/index",
+  PRODUCT: "/p/{slug}"
 };
 
 export interface ApiResponse<T = any> {
@@ -55,6 +57,44 @@ export interface PostAuthRegister {
   token: String
   name: String,
   password: String
+}
+
+export interface ListResponse<T> {
+  data:T[];
+}
+
+export interface ProductValueResponse {
+  value:string;
+}
+
+export interface ProductResponse {
+  price:number;
+  imagePath:string;
+  values:ProductValueResponse[];
+}
+
+export interface AttributeValueResponse{
+  value:string;
+}
+
+export interface AttributeResponse {
+  name:string;
+  values:AttributeValueResponse[];
+}
+
+export interface PageImageResponse {
+  path:string;
+  index:number;
+}
+
+export interface ProductPageResponse {
+  title:string;
+  slug:string;
+  shortDescription:string;
+  description:string;
+  products:ProductResponse[];
+  attributes:AttributeResponse[];
+  images:PageImageResponse[];
 }
 
 export async function api_request<T>(
@@ -170,4 +210,20 @@ export async function auth_loggout(): Promise<AuthResponse | undefined> {
   }
 
   return undefined;
+}
+
+export async function requestIndex(): Promise<ListResponse<ProductPageResponse> | undefined> {
+  const response = await api_request<ListResponse<ProductPageResponse>>(API_ENDPOINTS.INDEX, {
+    method: 'GET',
+  });
+
+  return response?.data;
+}
+
+export async function requestPage(slug:string): Promise<ListResponse<ProductPageResponse> | undefined> {
+  const response = await api_request<ListResponse<ProductPageResponse>>(API_ENDPOINTS.PRODUCT.replace("{slug}", slug), {
+    method: 'GET',
+  });
+
+  return response?.data;
 }

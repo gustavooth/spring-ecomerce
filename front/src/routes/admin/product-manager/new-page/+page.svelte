@@ -16,7 +16,7 @@
 
   let currentStep = $state(0);
 
-  let {firstStep = $bindable(STEP.ATTRIBUTE), pageId = $bindable(13)} = $props();
+  let {firstStep = $bindable(STEP.PAGE), pageId = $bindable(undefined)} = $props();
 
   onMount(() => {
     reloadState();

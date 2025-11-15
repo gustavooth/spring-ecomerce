@@ -35,11 +35,6 @@ public class ProductController {
     @Autowired
     PageImageRepository pageImageRepository;
 
-    boolean checkSlug(String slug) {
-        var resp = productPageRepository.findBySlug(slug);
-        return resp.getProducts().isEmpty();
-    }
-
     @PostMapping("/new-page")
     public ApiResponse handleNewPage(@NonNull HttpServletRequest request , @RequestBody NewProductPageRequest body) {
         ProductPageModel productPageModel = new ProductPageModel(body.getTitle(), body.getSlug(), body.getShortDescription(), body.getDescription());

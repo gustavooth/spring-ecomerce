@@ -91,7 +91,7 @@
             <Icon src={BsGeoAltFill} color="oklch(29.3% 0.066 243.157)" className="text-xl mr-2"></Icon>
           </div>
           <div>
-            <span class="text-sm">Entregando em <span class="font-semibold">Sete Lagoas 35000-000</span>. <span class="text-blue-600">Atualizar local</span></span>
+            <span class="text-sm">Entregando em <span class="font-semibold">São Paulo 15000-000</span>. <span class="text-blue-600">Atualizar local</span></span>
           </div>
         </div>
         <div class="mt-3 w-full">
