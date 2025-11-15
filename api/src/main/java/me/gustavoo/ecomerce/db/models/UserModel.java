@@ -18,7 +18,7 @@ public class UserModel {
     public String email;
 
     @Column(name = "password", length = 100, nullable = false)
-    public String passowrd;
+    public String password;
 
     @Column(nullable = false, length = 50)
     public String role;
@@ -35,9 +35,8 @@ public class UserModel {
     public UserModel(String name, String email, String passowrd, String role, int roleLevel) {
         this.name = name;
         this.email = email;
-        this.passowrd = passowrd;
+        this.password = passowrd;
         this.role = role;
-        this.passowrd = passowrd;
         this.createdAt = LocalDate.now();
         this.updatedAt = LocalDate.now();
     }

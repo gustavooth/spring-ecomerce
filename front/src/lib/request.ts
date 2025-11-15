@@ -1,6 +1,6 @@
 export const API_BASE = "http://127.0.0.1:8080"
 
-let authToken = "";
+export let authToken = "";
 export function setAuthToken(token: String) {
   authToken = token.toString();
 }

@@ -1,34 +1,37 @@
 package me.gustavoo.ecomerce.db.models;
 
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.Cascade;
+
+import java.util.List;
 
 @Entity
-@Table(name = "ProductPage")
+@Table(name = "product_page")
+@Data @NoArgsConstructor @RequiredArgsConstructor
 public class ProductPageModel {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    public long id;
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
 
-    @Column(length = 255, nullable = false)
-    public String title;
+    @NonNull @Column(length = 255, nullable = false)
+    private String title;
 
-    @Column(length = 255, nullable = false, unique = true)
-    public String slug;
+    @NonNull @Column(length = 255, nullable = false, unique = true)
+    private String slug;
 
-    @Column(length = 500, nullable = false)
-    public String imagePaths;
+    @NonNull @Column(name = "short_description", length = 500, nullable = false)
+    private String shortDescription;
 
-    @Column(length = 500, nullable = false)
-    public String shotDescription;
+    @Lob
+    @NonNull @Column(nullable = false)
+    private String description;
 
-    @Column(nullable = false)
-    public String description;
+    @OneToMany(mappedBy = "page", cascade = CascadeType.ALL)
+    private List<ProductModel> products;
 
-    public ProductPageModel(String title, String slug, String imagePaths, String shotDescription, String description) {
-        this.title = title;
-        this.slug = slug;
-        this.imagePaths = imagePaths;
-        this.shotDescription = shotDescription;
-        this.description = description;
-    }
+    @OneToMany(mappedBy = "page", cascade = CascadeType.ALL)
+    private List<AttributeModel> attributes;
+
+    @OneToMany(mappedBy = "page", cascade = CascadeType.ALL)
+    private List<PageImageModel> images;
 }

@@ -3,7 +3,9 @@ import { api_request } from "$lib/request";
 //TODO: Remover isso daqui urgente!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 export const FS_TOKEN = "HjGRgi427aUez9oxsamgzJV5Vx5Sc3g8bKEW7Y9wFBANszvH6ulY1XZskegv5nVq";
 
-export const FS_BASE = "http://127.0.0.1:8081"
+export const FS_BASE_ROUTE = "http://127.0.0.1:8081"
+export const VIEW_IMAGE_ROUTE:string = "http://127.0.0.1:8081/public";
+export const DOWNLOAD_FILE_ROUTE:string = "http://127.0.0.1:8081/public/download";
 
 export const FS_ENDPOINTS = {
   NEW_UPLOAD_TOKEN: "/admin/new_upload_token",
@@ -11,12 +13,27 @@ export const FS_ENDPOINTS = {
   FS: {
     LIST: "/fs/ls",
     NEW_FOLDER: "/fs/mkdir",
-    REMOVE: "/fs/rm"
+    REMOVE: "/fs/rm",
+    MOVE: "/fs/mv",
+    COPY: "/fs/cp"
   }
 };
 
+export const ItemType = {
+  OTHER: 0,
+  FOLDER: 1,
+  IMAGE: 2,
+  VIDEO: 3,
+  MUSIC: 4,
+  COMPRESS: 5,
+  DOCUMENT: 6,
+  TEXT: 7,
+  CODE: 8,
+  BINARY: 9,
+}
+
 export interface FileManagerRequest {
-  path: string;
+  paths: string[];
 }
 
 export interface NewTokenFile {
@@ -42,16 +59,16 @@ export interface ItemList {
   path: string,
 }
 
-export interface ListFilesResponse {
+export interface ListItemsResponse {
   items: ItemList[];
 }
 
-export interface NewFolderResponse {
-  newPath: string;
+export interface PathResponse {
+  path: string;
 }
 
-export interface RemoveResponse {
-  removedFiles:string[];
+export interface ListPathsResponse {
+  paths:string[];
 }
 
 export interface FSResponse<T = any> {
@@ -60,14 +77,14 @@ export interface FSResponse<T = any> {
   data: T;
 }
 
-export async function removeItem(data: FileManagerRequest): Promise<RemoveResponse| undefined> {
-  const response = await api_request<RemoveResponse>(FS_ENDPOINTS.FS.REMOVE, {
+export async function FSRequest<T, E>(endpoint:string, data:E): Promise<T| undefined> {
+  const response = await api_request<T>(endpoint, {
     method: 'POST',
     body: JSON.stringify(data),
     headers: {
       "Authorization": FS_TOKEN,
     }
-  }, FS_BASE);
+  }, FS_BASE_ROUTE);
 
   if (response != undefined) {
     return response.data;
@@ -76,62 +93,38 @@ export async function removeItem(data: FileManagerRequest): Promise<RemoveRespon
   return undefined;
 }
 
-export async function newFolder(data: FileManagerRequest): Promise<NewFolderResponse| undefined> {
-  const response = await api_request<NewFolderResponse>(FS_ENDPOINTS.FS.NEW_FOLDER, {
-    method: 'POST',
-    body: JSON.stringify(data),
-    headers: {
-      "Authorization": FS_TOKEN,
-    }
-  }, FS_BASE);
-
-  if (response != undefined) {
-    return response.data;
-  }
-
-  return undefined;
+export async function requestRemovePath(data: FileManagerRequest): Promise<ListPathsResponse| undefined> {
+  return FSRequest(FS_ENDPOINTS.FS.REMOVE, data);
 }
 
-export async function listFiles(data:FileManagerRequest): Promise<ListFilesResponse | undefined> {
-  const response = await api_request<ListFilesResponse>(FS_ENDPOINTS.FS.LIST, {
-    method: 'POST',
-    body: JSON.stringify(data),
-    headers: {
-      "Authorization": FS_TOKEN,
-    }
-  }, FS_BASE);
-
-  if (response != undefined) {
-    return response.data;
-  }
-
-  return undefined;
+export async function requestMkDir(data: FileManagerRequest): Promise<PathResponse| undefined> {
+  return FSRequest(FS_ENDPOINTS.FS.NEW_FOLDER, data);
 }
 
-export async function newUploadToken(data: PostNewToken): Promise<NewTokenResponse | undefined> {
-  const response = await api_request<NewTokenResponse>(FS_ENDPOINTS.NEW_UPLOAD_TOKEN, {
-    method: 'POST',
-    body: JSON.stringify(data),
-    headers: {
-      "Authorization": FS_TOKEN,
-    }
-  }, FS_BASE);
-
-  if (response != undefined) {
-    return response.data;
-  }
-
-  return undefined;
+export async function requestMovePath(data:FileManagerRequest): Promise<ListPathsResponse | undefined> {
+  return FSRequest(FS_ENDPOINTS.FS.MOVE, data);
 }
 
-export async function fs_upload(files: File[], token: String) {
+export async function requestCopyPath(data:FileManagerRequest): Promise<ListPathsResponse | undefined> {
+  return FSRequest(FS_ENDPOINTS.FS.COPY, data);
+}
+
+export async function requestListPath(data:FileManagerRequest): Promise<ListItemsResponse | undefined> {
+  return FSRequest(FS_ENDPOINTS.FS.LIST, data);
+}
+
+export async function requestNewUpToken(data: PostNewToken): Promise<NewTokenResponse | undefined> {
+  return FSRequest(FS_ENDPOINTS.NEW_UPLOAD_TOKEN, data);
+}
+
+export async function requestUploadItems(files: File[], token: String) {
   const formData = new FormData();
 
   for (const file of files) {
     formData.append("files", file);
   }
 
-  let route = `${FS_BASE}${FS_ENDPOINTS.UPLOAD_FILES}/${token}`
+  let route = `${FS_BASE_ROUTE}${FS_ENDPOINTS.UPLOAD_FILES}/${token}`
 
   try{
     const response = await fetch(route, {method: "POST", body: formData, headers: {"Authorization": FS_TOKEN}});

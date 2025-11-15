@@ -1,1 +1,9 @@
 api/target/
+api/.idea
+api/.mvn
+file_server/target
+file_server/.mvn
+file_server/.idea
+file_server/uploads
+front/.svelte-kit
+front/node_modules

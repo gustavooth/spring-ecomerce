@@ -1,9 +1,9 @@
 package me.gustavoo.ecomerce.controllers;
 
 import jakarta.servlet.http.HttpServletRequest;
-import me.gustavoo.ecomerce.controllers.models.ApiResponse;
-import me.gustavoo.ecomerce.controllers.models.SessionStateResponse;
-import me.gustavoo.ecomerce.controllers.models.UserStateResponse;
+import me.gustavoo.ecomerce.controllers.responseModels.ApiResponse;
+import me.gustavoo.ecomerce.controllers.responseModels.SessionStateResponse;
+import me.gustavoo.ecomerce.controllers.responseModels.UserStateResponse;
 import me.gustavoo.ecomerce.db.models.SessionModel;
 import me.gustavoo.ecomerce.db.models.UserModel;
 import me.gustavoo.ecomerce.db.repository.SessionRepository;
