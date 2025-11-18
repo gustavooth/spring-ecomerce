@@ -7,3 +7,4 @@ file_server/.idea
 file_server/uploads
 front/.svelte-kit
 front/node_modules
+.idea
