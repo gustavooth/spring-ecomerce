@@ -1,9 +1,10 @@
 package me.gustavoo.ecomerce.controllers.requestModels;
 
 import lombok.Data;
-import me.gustavoo.ecomerce.db.models.AttributeModel;
 
 @Data
-public class NewAttributeValueRequest {
+public class UpdateAttributeValueRequest {
+    private final long id;
     private final String value;
+    private final boolean active;
 }

@@ -5,8 +5,10 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class NewAttributeRequest {
+public class UpdateAttributeRequest {
+    private final long id;
     private final String name;
     private final boolean showImage;
-    private final List<NewAttributeValueRequest> values;
+    private final List<NewAttributeValueRequest> newValues;
+    private final boolean active;
 }

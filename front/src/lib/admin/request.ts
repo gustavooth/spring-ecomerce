@@ -2,24 +2,11 @@ import { api_request, authToken, type ApiResponse, type AuthResponse } from "$li
 
 export const ADMIN_ENDPOINTS = {
   PRODUCT: {
-    NEW: {
-      PAGE: "/admin/product/new-page",
-      PRODUCT: "/admin/product/new-product",
-      ATTRIBUTE: "/admin/product/new-attribute",
-      ATTRIBUTE_VALUE: "/admin/product/new-attribute-value",
-      PRODUCT_VALUE: "/admin/product/new-product-value",
-      PAGE_IMAGE: "/admin/product/new-page-image",
-    },
+    NEW_PAGE: "/admin/product/new-page",
+    REMOVE_PAGE: "/admin/product/remove-page",
+    UPDATE_PAGE: "/admin/product/update-page",
     SELECT_PAGE: "/admin/product/select-page",
     SELECT_PAGES: "/admin/product/select-pages",
-    REMOVE: {
-      PAGE: "/admin/product/remove-page",
-      PRODUCT: "/admin/product/remove-product",
-      ATTRIBUTE: "/admin/product/remove-attribute",
-      ATTRIBUTE_VALUE: "/admin/product/remove-attribute-value",
-      PRODUCT_VALUE: "/admin/product/remove-product-value",
-      PAGE_IMAGE: "/admin/product/remove-page-image",
-    }
   }
 };
 
@@ -27,32 +14,30 @@ export interface NewPageRequest {
   title:string;
   slug:string;
   shortDescription:string;
-  description:string
+  description:string;
+  products:NewProductRequest[];
+  attributes:NewAttributeRequest[];
+  images:NewPageImageRequest[];
 }
 
 export interface NewProductRequest {
-  pageId:number;
   price:string;
+  stock:string;
   imagePath:string;
+  values:string[];
 }
 
 export interface NewAttributeRequest {
   name:string;
-  pageId:number;
+  showImage:boolean;
+  values:NewAttributeValueRequest[];
 }
 
 export interface NewAttributeValueRequest {
-  attributeId:number;
   value:string;
 }
 
-export interface NewProductValueRequest {
-  attributeValueId:number;
-  productId:number;
-} 
-
 export interface NewPageImageRequest {
-  pageId:number;
   path:string;
   index:number;
 }
@@ -65,6 +50,43 @@ export interface RemoveRequest {
   id:number
 }
 
+export interface UpdateProductRequest {
+  id:number;
+  price:string;
+  stock:string;
+  imagePath:string;
+  values:string[];
+  active:boolean;
+}
+
+export interface UpdateAttributeRequest {
+  id:number;
+  name:string;
+  showImage:boolean;
+  newValues:NewAttributeValueRequest[];
+  active:boolean;
+}
+
+export interface UpdateAttributeValueRequest {
+  id:number;
+  value:string;
+  active:boolean;
+}
+
+export interface UpdateProductPageRequest {
+  id:number;
+  title:string;
+  slug:string;
+  shortDescription:string;
+  description:string;
+  products:NewProductRequest[];
+  attributes:NewAttributeRequest[];
+  images:NewPageImageRequest[];
+  updateProducts:UpdateProductRequest[];
+  updateAttribute:UpdateAttributeRequest[];
+  updateAttributeValues:UpdateAttributeValueRequest[];
+}
+
 export interface ListResponse<T> {
   data:T[];
 }
@@ -74,13 +96,16 @@ export interface ProductValueResponse {
   valueId:number;
   value:string;
   productId:number;
+  active:boolean
 }
 
 export interface ProductResponse {
   id:number;
   pageId:number;
   price:number;
+  stock:number;
   imagePath:string;
+  active:boolean;
   values:ProductValueResponse[];
 }
 
@@ -88,12 +113,15 @@ export interface AttributeValueResponse{
   id:number;
   attributeId:number;
   value:string;
+  active:boolean;
 }
 
 export interface AttributeResponse {
   id:number;
   name:string;
   pageId:string;
+  showImage:boolean;
+  active:boolean;
   values:AttributeValueResponse[];
 }
 
@@ -110,6 +138,7 @@ export interface ProductPageResponse {
   slug:string;
   shortDescription:string;
   description:string;
+  active:boolean;
   products:ProductResponse[];
   attributes:AttributeResponse[];
   images:PageImageResponse[];
@@ -139,51 +168,15 @@ async function admin_request_no_data<T, E>(endpoint:string):Promise<ApiResponse<
 }
 
 export async function requestNewPage(data:NewPageRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.PAGE);
+  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW_PAGE);
 }
 
-export async function requestNewProduct(data:NewProductRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.PRODUCT);
+export async function requestUpdatePage(data:SelectRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
+  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.UPDATE_PAGE);
 }
 
-export async function requestNewAttribute(data:NewAttributeRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.ATTRIBUTE);
-}
-
-export async function requestNewAttributeValue(data:NewAttributeValueRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.ATTRIBUTE_VALUE);
-}
-
-export async function requestNewProductValue(data:NewProductValueRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.PRODUCT_VALUE);
-}
-
-export async function requestNewPageImage(data:NewPageImageRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.NEW.PAGE_IMAGE);
-}
-
-export async function requestRemovePage(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.PAGE);
-}
-
-export async function requestRemoveProduct(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.PRODUCT);
-}
-
-export async function requestRemoveAttribute(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.ATTRIBUTE);
-}
-
-export async function requestRemoveAttributeValue(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.ATTRIBUTE_VALUE);
-}
-
-export async function requestRemoveProductValue(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.PRODUCT_VALUE);
-}
-
-export async function requestRemovePageImage(data:RemoveRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
-  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE.PAGE_IMAGE);
+export async function requestRemovePage(data:SelectRequest):Promise<ApiResponse<GeneralResponse> | undefined> {
+  return admin_request(data, ADMIN_ENDPOINTS.PRODUCT.REMOVE_PAGE);
 }
 
 export async function requestSelectPage(data:SelectRequest):Promise<ApiResponse<ProductPageResponse> | undefined> {

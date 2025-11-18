@@ -8,4 +8,5 @@ public class ProductValueResponse {
     private final long valueId;
     private final String value;
     private final long productId;
+    private final boolean active;
 }

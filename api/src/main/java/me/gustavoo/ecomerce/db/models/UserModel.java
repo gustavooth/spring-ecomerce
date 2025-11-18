@@ -1,11 +1,15 @@
 package me.gustavoo.ecomerce.db.models;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import jakarta.persistence.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 @Entity
 @Table(name = "users")
+@EntityListeners(AuditingEntityListener.class)
 public class UserModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,19 +30,19 @@ public class UserModel {
     @Column(name = "role_level", nullable = false)
     public int roleLevel;
 
-    @Column(name = "created_at", nullable = false)
-    public LocalDate createdAt;
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
-    public LocalDate updatedAt;
+    @LastModifiedDate
+    @Column(nullable = false)
+    private LocalDateTime updatedAt;
 
     public UserModel(String name, String email, String passowrd, String role, int roleLevel) {
         this.name = name;
         this.email = email;
         this.password = passowrd;
         this.role = role;
-        this.createdAt = LocalDate.now();
-        this.updatedAt = LocalDate.now();
     }
 
     public UserModel() {

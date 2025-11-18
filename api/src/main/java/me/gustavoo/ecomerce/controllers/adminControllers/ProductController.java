@@ -1,6 +1,7 @@
 package me.gustavoo.ecomerce.controllers.adminControllers;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import me.gustavoo.ecomerce.Api;
 import me.gustavoo.ecomerce.controllers.requestModels.*;
 import me.gustavoo.ecomerce.controllers.responseModels.ApiResponse;
@@ -37,98 +38,109 @@ public class ProductController {
 
     @PostMapping("/new-page")
     public ApiResponse handleNewPage(@NonNull HttpServletRequest request , @RequestBody NewProductPageRequest body) {
-        ProductPageModel productPageModel = new ProductPageModel(body.getTitle(), body.getSlug(), body.getShortDescription(), body.getDescription());
-
+        ProductPageModel productPageModel = new ProductPageModel(body.getTitle(), body.getSlug(), body.getShortDescription(), body.getDescription(), true);
         try {
             productPageRepository.save(productPageModel);
-            return ApiResponse.successResponse(new GeneralResponse(productPageModel.getId()));
+        } catch (Exception e) {
+            return ApiResponse.errorResponse("exception: "+e.toString());
+        }
+        var images = body.getImages();
+        for (NewPageImageRequest image : images) {
+            PageImageModel pageImageModel = new PageImageModel(productPageModel, image.getPath(), image.getIndex());
+
+            try {
+                pageImageRepository.save(pageImageModel);
+            } catch (Exception e) {
+                return ApiResponse.errorResponse("exception: " + e.toString());
+            }
+        }
+
+        var attributes = body.getAttributes();
+        List<AttributeValueModel> values = new ArrayList<>(10);
+        for (NewAttributeRequest attribute : attributes) {
+            AttributeModel attributeModel = new AttributeModel(attribute.getName(), attribute.isShowImage(), productPageModel, true);
+
+            try {
+                attributeRepository.save(attributeModel);
+            } catch (Exception e) {
+                return ApiResponse.errorResponse("exception: " + e.toString());
+            }
+
+            for (NewAttributeValueRequest value : attribute.getValues()) {
+                AttributeValueModel valueModel = new AttributeValueModel(value.getValue(), attributeModel, true);
+
+                try {
+                    attributeValuesRepository.save(valueModel);
+                } catch (Exception e) {
+                    return ApiResponse.errorResponse("exception: " + e.toString());
+                }
+
+                values.add(valueModel);
+            }
+        }
+
+        var products = body.getProducts();
+        for (NewProductRequest product : products) {
+            var price = Double.valueOf(product.getPrice());
+            var stock = Integer.valueOf(product.getStock());
+            ProductModel productModel = new ProductModel(productPageModel, price, stock, product.getImagePath(), true);
+
+            try {
+                productRepository.save(productModel);
+            } catch (Exception e) {
+                return ApiResponse.errorResponse("exception: " + e.toString());
+            }
+
+            for (String productValue : product.getValues()) {
+                AttributeValueModel attributeValueModel = null;
+                for (int i = 0; i < values.size(); i++) {
+                    if (values.get(i).getValue().equals(productValue)) {
+                        attributeValueModel = values.get(i);
+                    }
+                }
+                if (attributeValueModel == null) {
+                    return ApiResponse.errorResponse("falha ao linkar valor de atributo ao produto");
+                }
+
+                ProductValueModel productValueModel = new ProductValueModel(attributeValueModel, productModel, true);
+                try {
+                    productValueRepository.save(productValueModel);
+                } catch (Exception e) {
+                    return ApiResponse.errorResponse("exception: " + e.toString());
+                }
+            }
+        }
+
+        return ApiResponse.successResponse(new GeneralResponse(productPageModel.getId()));
+    }
+
+    @PostMapping("/select-page")
+    public ApiResponse handleSelectPage(@NonNull HttpServletRequest request, @RequestBody SelectRequest body) {
+        try {
+            var page = productPageRepository.findById(body.getId());
+            if (page.isPresent()) {
+                return ApiResponse.successResponse(new ProductPageResponse(page.get()));
+            }else {
+                return ApiResponse.errorResponse("pagina nao encontrada!");
+            }
         } catch (Exception e) {
             return ApiResponse.errorResponse("exception: "+e.toString());
         }
     }
 
-    @PostMapping("/new-product")
-    public ApiResponse handleNewProduct(@NonNull HttpServletRequest request , @RequestBody NewProductRequest body) {
-        try {
-            Double price = Double.parseDouble(body.getPrice());
-            var page_resp = productPageRepository.findById(body.getPageId());
-            if (page_resp.isPresent()) {
-                ProductModel model = new ProductModel(page_resp.get(), price, body.getImagePath());
-                productRepository.save(model);
-                return ApiResponse.successResponse(new GeneralResponse(model.getId()));
-            }else {
-                return ApiResponse.errorResponse("pagina nao encontrada!");
-            }
-        }catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
 
-    @PostMapping("/new-attribute")
-    public ApiResponse handleNewAttribute(@NonNull HttpServletRequest request , @RequestBody NewAttributeRequest body) {
+    @PostMapping("/select-pages")
+    public ApiResponse handleSelectPages(@NonNull HttpServletRequest request) {
         try {
-            var page_resp = productPageRepository.findById(body.getPageId());
-            if (page_resp.isPresent()) {
-                AttributeModel model = new AttributeModel(body.getName(), page_resp.get());
-                attributeRepository.save(model);
-                return ApiResponse.successResponse(new GeneralResponse(model.getId()));
-            }else {
-                return ApiResponse.errorResponse("pagina nao encontrada!");
-            }
-        }catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
+            List<ProductPageModel> pages = productPageRepository.findAll();
+            List<ProductPageResponse> response = new ArrayList<>(pages.size());
 
-    @PostMapping("/new-attribute-value")
-    public ApiResponse handleNewAttributeValue(@NonNull HttpServletRequest request , @RequestBody NewAttributeValueRequest body) {
-        try {
-            var attribute_resp = attributeRepository.findById(body.getAttributeId());
-            if (attribute_resp.isPresent()) {
-                AttributeValueModel model = new AttributeValueModel(attribute_resp.get(), body.getValue());
-                attributeValuesRepository.save(model);
-                return ApiResponse.successResponse(new GeneralResponse(model.getId()));
-            }else {
-                return ApiResponse.errorResponse("atributo nao encontrado!");
+            for (ProductPageModel model : pages) {
+                response.add(new ProductPageResponse(model));
             }
-        }catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
 
-    @PostMapping("/new-product-value")
-    public ApiResponse handleNewProductValue(@NonNull HttpServletRequest request , @RequestBody NewProductValueRequest body) {
-        try {
-            var attribute_value_resp = attributeValuesRepository.findById(body.getAttributeValueId());
-            if (attribute_value_resp.isPresent()) {
-                var product_resp = productRepository.findById(body.getProductId());
-                if (product_resp.isPresent()) {
-                    ProductValueModel model = new ProductValueModel(attribute_value_resp.get(), product_resp.get());
-                    productValueRepository.save(model);
-                    return ApiResponse.successResponse(new GeneralResponse(model.getId()));
-                }else {
-                    return ApiResponse.errorResponse("produto nao encontrado!");
-                }
-            }else {
-                return ApiResponse.errorResponse("valor de atributo nao encontrado!");
-            }
-        }catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
-
-    @PostMapping("/new-page-image")
-    public ApiResponse handleNewPageImage(@NonNull HttpServletRequest request , @RequestBody NewPageImageRequest body) {
-        try {
-            var page_resp = productPageRepository.findById(body.getPageId());
-            if (page_resp.isPresent()) {
-                PageImageModel model = new PageImageModel(page_resp.get(), body.getPath(), body.getIndex());
-                pageImageRepository.save(model);
-                return ApiResponse.successResponse(new GeneralResponse(model.getId()));
-            }else {
-                return ApiResponse.errorResponse("pagina nao encontrada!");
-            }
-        }catch (Exception e) {
+            return ApiResponse.successResponse(new ListResponse<ProductPageResponse>(response));
+        } catch (Exception e) {
             return ApiResponse.errorResponse("exception: "+e.toString());
         }
     }
@@ -148,108 +160,142 @@ public class ProductController {
         }
     }
 
-    @PostMapping("/remove-product")
-    public ApiResponse handleRemoveProduct(@NonNull HttpServletRequest request , @RequestBody SelectRequest body) {
-        try {
-            var resp = productRepository.findById(body.getId());
-            if (resp.isPresent()) {
-                productRepository.delete(resp.get());
-                return ApiResponse.successResponse(new GeneralResponse(body.getId()));
+    @Transactional
+    @PostMapping("update-page")
+    public ApiResponse handleUpdatePage(@NonNull HttpServletRequest request , @RequestBody UpdateProductPageRequest body) {
+        var page = productPageRepository.findById(body.getId());
+        if (!page.isPresent()) {
+            return ApiResponse.errorResponse("pagina nao encontrada!");
+        }
+
+        ProductPageModel data = page.get();
+        data.setTitle(body.getTitle());
+        data.setSlug(body.getSlug());
+        data.setShortDescription(body.getShortDescription());
+        data.setDescription(body.getDescription());
+
+        var newImages = body.getImages();
+        if (!newImages.isEmpty()) {
+            var images = pageImageRepository.findAllByPageId(body.getId());
+            for (PageImageModel image: images) {
+                pageImageRepository.delete(image);
+            }
+        }
+        for (int i = 0; i < newImages.size(); i++) {
+            NewPageImageRequest newImage = newImages.get(i);
+            PageImageModel imageModel = new PageImageModel(data, newImage.getPath(), newImage.getIndex());
+            pageImageRepository.save(imageModel);
+        }
+
+        var newAttributes = body.getAttributes();
+        for (NewAttributeRequest newAttribute : newAttributes) {
+            AttributeModel attributeModel = new AttributeModel(newAttribute.getName(), newAttribute.isShowImage(), data, true);
+
+            var newValues = newAttribute.getValues();
+
+            for (NewAttributeValueRequest newValue: newValues) {
+                AttributeValueModel attributeValueModel = new AttributeValueModel(newValue.getValue(), attributeModel, true);
+                attributeValuesRepository.save(attributeValueModel);
+            }
+
+            attributeRepository.save(attributeModel);
+        }
+
+        var updateAttributes = body.getUpdateAttributes();
+        for (UpdateAttributeRequest updateAttribute: updateAttributes) {
+            var attributeResp = attributeRepository.findById(updateAttribute.getId());
+            if (attributeResp.isPresent()) {
+                AttributeModel attributeModel = attributeResp.get();
+                attributeModel.setName(updateAttribute.getName());
+                attributeModel.setShowImage(updateAttribute.isShowImage());
+
+                if (attributeModel.isActive() && !updateAttribute.isActive()) {
+                    List<AttributeValueModel> valueModels = attributeValuesRepository.findAllByAttributeIdAndActive(attributeModel.getId(), true);
+                    for (AttributeValueModel valueModel : valueModels) {
+                        valueModel.setActive(false);
+                        attributeValuesRepository.save(valueModel);
+                    }
+                }
+
+                attributeModel.setActive(updateAttribute.isActive());
+                attributeRepository.save(attributeModel);
+
+                var newValues = updateAttribute.getNewValues();
+                for (NewAttributeValueRequest newValue : newValues) {
+                    AttributeValueModel attributeValueModel = new AttributeValueModel(newValue.getValue(), attributeModel, true);
+                    attributeValuesRepository.save(attributeValueModel);
+                }
             }else {
-                return ApiResponse.errorResponse("produto nao encontrado!");
+                return ApiResponse.errorResponse("Atributo nao encontrado: "+ updateAttribute.getId());
             }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
         }
-    }
 
-    @PostMapping("/remove-attribute")
-    public ApiResponse handleRemoveAttribute(@NonNull HttpServletRequest request , @RequestBody SelectRequest body) {
-        try {
-            var resp = attributeRepository.findById(body.getId());
-            if (resp.isPresent()) {
-                attributeRepository.delete(resp.get());
-                return ApiResponse.successResponse(new GeneralResponse(body.getId()));
-            }else {
-                return ApiResponse.errorResponse("atributo nao encontrado!");
+        var updateAttributeValues = body.getUpdateAttributeValues();
+        for (UpdateAttributeValueRequest updateAttributeValueRequest: updateAttributeValues) {
+            var valueResp = attributeValuesRepository.findById(updateAttributeValueRequest.getId());
+            if (valueResp.isPresent()) {
+                var valueModel = valueResp.get();
+                valueModel.setValue(updateAttributeValueRequest.getValue());
+                valueModel.setActive(updateAttributeValueRequest.isActive());
             }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
         }
-    }
 
-    @PostMapping("/remove-attribute-value")
-    public ApiResponse handleRemoveAttributeValue(@NonNull HttpServletRequest request , @RequestBody SelectRequest body) {
-        try {
-            var resp = attributeValuesRepository.findById(body.getId());
-            if (resp.isPresent()) {
-                attributeValuesRepository.delete(resp.get());
-                return ApiResponse.successResponse(new GeneralResponse(body.getId()));
-            }else {
-                return ApiResponse.errorResponse("valor de atributo nao encontrado!");
+        var availableValue = new ArrayList<AttributeValueModel>(10);
+        var attributesResp = attributeRepository.findAllByPageIdAndActive(body.getId(), true);
+        for (AttributeModel attributeModel: attributesResp) {
+            var values = attributeValuesRepository.findAllByAttributeIdAndActive(attributeModel.getId(), true);
+            availableValue.addAll(values);
+        }
+
+        var updateProducts = body.getUpdateProducts();
+        for (UpdateProductRequest productRequest: updateProducts) {
+            var productResp = productRepository.findById(productRequest.getId());
+            if (productResp.isPresent()) {
+                var productModel = productResp.get();
+                var price = Double.valueOf(productRequest.getPrice());
+                var stock = Integer.valueOf(productRequest.getStock());
+                productModel.setPrice(price);
+                productModel.setStock(stock);
+                productModel.setImagePath(productRequest.getImagePath());
+                productModel.setActive(productRequest.isActive());
+                productRepository.save(productModel);
+
+                var productValues = productValueRepository.findAllByProductId(productModel.getId());
+                for (ProductValueModel productValueModel: productValues) {
+                    productValueModel.setActive(false);
+                    productValueRepository.save(productValueModel);
+                }
+
+                for (String value: productRequest.getValues()) {
+                    for (AttributeValueModel valueModel: availableValue) {
+                        if (valueModel.getValue().equals(value)) {
+                            ProductValueModel productValueModel = new ProductValueModel(valueModel, productModel, true);
+                            productValueRepository.save(productValueModel);
+                            break;
+                        }
+                    }
+                }
             }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
         }
-    }
 
-    @PostMapping("/remove-product-value")
-    public ApiResponse handleNewProductValue(@NonNull HttpServletRequest request , @RequestBody SelectRequest body) {
-        try {
-            var resp = productValueRepository.findById(body.getId());
-            if (resp.isPresent()) {
-                productValueRepository.delete(resp.get());
-                return ApiResponse.successResponse(new GeneralResponse(body.getId()));
-            }else {
-                return ApiResponse.errorResponse("valor de produto nao encontrado!");
+        var newProducts = body.getProducts();
+        for (NewProductRequest newProduct: newProducts) {
+            var price = Double.valueOf(newProduct.getPrice());
+            var stock = Integer.valueOf(newProduct.getStock());
+            ProductModel productModel = new ProductModel(data, price, stock, newProduct.getImagePath(), true);
+            productRepository.save(productModel);
+
+            for (String value: newProduct.getValues()) {
+                for (AttributeValueModel valueModel: availableValue) {
+                    if (valueModel.getValue().equals(value)) {
+                        ProductValueModel productValueModel = new ProductValueModel(valueModel, productModel, true);
+                        productValueRepository.save(productValueModel);
+                        break;
+                    }
+                }
             }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
         }
-    }
 
-    @PostMapping("/remove-page-image")
-    public ApiResponse handleNewPageImage(@NonNull HttpServletRequest request , @RequestBody SelectRequest body) {
-        try {
-            var resp = pageImageRepository.findById(body.getId());
-            if (resp.isPresent()) {
-                pageImageRepository.delete(resp.get());
-                return ApiResponse.successResponse(new GeneralResponse(body.getId()));
-            }else {
-                return ApiResponse.errorResponse("imagem nao encontrada!");
-            }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
-
-    @PostMapping("/select-page")
-    public ApiResponse handleSelectPage(@NonNull HttpServletRequest request, @RequestBody SelectRequest body) {
-        try {
-            var page = productPageRepository.findById(body.getId());
-            if (page.isPresent()) {
-                return ApiResponse.successResponse(new ProductPageResponse(page.get()));
-            }else {
-                return ApiResponse.errorResponse("pagina nao encontrada!");
-            }
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
-    }
-
-    @PostMapping("/select-pages")
-    public ApiResponse handleSelectPages(@NonNull HttpServletRequest request) {
-        try {
-            List<ProductPageModel> pages = productPageRepository.findAll();
-            List<ProductPageResponse> response = new ArrayList<>(pages.size());
-
-            for (ProductPageModel model : pages) {
-                response.add(new ProductPageResponse(model));
-            }
-
-            return ApiResponse.successResponse(new ListResponse<ProductPageResponse>(response));
-        } catch (Exception e) {
-            return ApiResponse.errorResponse("exception: "+e.toString());
-        }
+        return ApiResponse.successResponse(new GeneralResponse(body.getId()));
     }
 }

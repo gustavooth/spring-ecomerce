@@ -13,6 +13,7 @@ public class ProductPageResponse {
     private final String slug;
     private final String shortDescription;
     private final String description;
+    private final boolean active;
     private final List<ProductResponse> products;
     private final List<AttributeResponse> attributes;
     private final List<PageImageResponse> images;
@@ -23,6 +24,7 @@ public class ProductPageResponse {
         this.slug = productPageModel.getSlug();
         this.shortDescription = productPageModel.getShortDescription();
         this.description = productPageModel.getDescription();
+        this.active = productPageModel.isActive();
 
         List<ProductModel> _products = productPageModel.getProducts();
         List<ProductResponse> products = new ArrayList<>(_products.size());
@@ -31,10 +33,10 @@ public class ProductPageResponse {
             List<ProductValueResponse> values = new ArrayList<>(_values.size());
             for (ProductValueModel _value : _values) {
                 AttributeValueModel _attribute_value = _value.getAttributeValue();
-                values.add(new ProductValueResponse(_value.getId(), _attribute_value.getId(), _attribute_value.getValue(), _product.getId()));
+                values.add(new ProductValueResponse(_value.getId(), _attribute_value.getId(), _attribute_value.getValue(), _product.getId(), _value.isActive()));
             }
 
-            products.add(new ProductResponse(_product.getId(), productPageModel.getId(), _product.getPrice(), _product.getImagePath(), values));
+            products.add(new ProductResponse(_product.getId(), productPageModel.getId(), _product.getPrice(), _product.getStock(), _product.getImagePath(), _product.isActive(), values));
         }
 
         List<AttributeModel> _attributes = productPageModel.getAttributes();
@@ -44,10 +46,10 @@ public class ProductPageResponse {
 
             List<AttributeValueResponse> values = new ArrayList<>(_values.size());
             for (AttributeValueModel _value : _values) {
-                values.add(new AttributeValueResponse(_value.getId(), _attribute.getId(), _value.getValue()));
+                values.add(new AttributeValueResponse(_value.getId(), _attribute.getId(), _value.getValue(), _value.isActive()));
             }
 
-            attributes.add(new AttributeResponse(_attribute.getId(), _attribute.getName(), productPageModel.getId(), values));
+            attributes.add(new AttributeResponse(_attribute.getId(), _attribute.getName(), productPageModel.getId(), _attribute.isShowImage(), _attribute.isActive(), values));
         }
 
         List<PageImageModel> _images = productPageModel.getImages();

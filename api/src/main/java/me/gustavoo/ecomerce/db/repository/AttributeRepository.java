@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface AttributeRepository extends JpaRepository<AttributeModel, Long> {
-    List<AttributeModel> findAllByPageId(long pageId);
+    List<AttributeModel> findAllByPageIdAndActive(long pageId, boolean active);
 }

@@ -9,5 +9,7 @@ public class AttributeResponse {
     private final long id;
     private final String name;
     private final long pageId;
+    private final boolean showImage;
+    private final boolean active;
     private final List<AttributeValueResponse> values;
 }

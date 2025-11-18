@@ -1,430 +1,313 @@
 <script lang="ts">
+    import ItemsList from "$lib/admin/FS/ItemsList.svelte";
   import UploadModal from "$lib/admin/FS/UploadModal.svelte";
-  import { formatViewImagePath } from "$lib/admin/FS/utils";
-  import { requestNewAttribute, requestNewAttributeValue, requestNewPage, requestNewPageImage, requestNewProduct, requestNewProductValue, requestSelectPage, type NewAttributeRequest, type NewAttributeValueRequest, type NewPageImageRequest, type NewPageRequest, type NewProductRequest, type NewProductValueRequest, type ProductPageResponse } from "$lib/admin/request";
+    import { formatViewImagePath } from "$lib/admin/FS/utils";
+  import CustonButton from "$lib/admin/ProductManager/CustonButton.svelte";
+  import CustonModal from "$lib/admin/ProductManager/CustonModal.svelte";
+  import CustonPanel from "$lib/admin/ProductManager/CustonPanel.svelte";
+  import TextArea from "$lib/admin/ProductManager/TextArea.svelte";
+  import TextInput from "$lib/admin/ProductManager/TextInput.svelte";
+    import { requestNewPage, type NewAttributeRequest, type NewAttributeValueRequest, type NewPageImageRequest, type NewPageRequest, type NewProductRequest } from "$lib/admin/request";
   import AdminHeader from "$lib/components/admin_header.svelte";
+    import Product from "$lib/components/product.svelte";
   import type { ItemList } from "$lib/fileServer";
-  import { onMount } from "svelte";
-  import { Icon } from "svelte-icons-pack";
-  import { BsXLg } from "svelte-icons-pack/bs";
+    import { Icon } from "svelte-icons-pack";
+    import { BsCheckSquare, BsSquare, BsTrash, BsTrashFill, BsX, BsXLg } from "svelte-icons-pack/bs";
 
-  export const STEP = {
-    PAGE: 0,
-    ATTRIBUTE: 1,
-    PRODUCT: 2
+  let {pageId = $bindable(undefined)} = $props();
+
+  interface Product {
+    price:string
+    startStock:string
+    imagePath:string
+    values:string[]
   }
 
-  let currentStep = $state(0);
+  interface Attribute {
+    name:string
+    showImage:boolean
+    values:string[]
+  }
 
-  let {firstStep = $bindable(STEP.PAGE), pageId = $bindable(undefined)} = $props();
-
-  onMount(() => {
-    reloadState();
-    currentStep = firstStep;
-  })
-
-  let openModal = $state(async (selected:ItemList[]) => {return selected;});
-
-  let page:ProductPageResponse|undefined = $state(undefined);
+  let openImageModal = $state(async (selected:ItemList[]):Promise<ItemList[]> => {return selected;});
+  let openCustonModal = $state(() => {});
+  let closeCustonModal = $state(() => {});
 
   let titleInputValue:string = $state("");
   let slugInputValue:string = $state("");
   let shortDescInputValue:string = $state("");
   let descInputValue:string = $state("");
   let imagesInputValues:ItemList[] = $state([]);
-
-  let attributeInputValue:string = $state("");
-  let attributeValueInputValues:string[] = $state([]);
-
   let priceInputValue:string = $state("");
-  let productImageInput:ItemList|undefined = $state(undefined)
-  let selectedAttributeValues:number[] = $state([]);
+  let startStockInputValue:string = $state("");
+
+  let products:Product[] = $state([]);
+  let attributes:Attribute[] = $state([]);
+
+  function newProductBlank():Product {
+    const newProduct:Product = {price:"", startStock:"", imagePath:"", values:[]};
+    newProduct.values.fill("", attributes.length);
+    return newProduct;
+  }
+
+  function updateState() {
+    if (attributes.length > 0) {
+      if (products.length == 0) {
+        products.push(newProductBlank());
+      }else {
+        const newProduct = newProductBlank();
+        for (let i = 0; i < products.length; i++) {
+          products[i].values = [];
+          products[i].values.fill("", attributes.length);
+        }
+      }
+    }
+  }
 
   async function handleBtnSelectImages() {
-    const selected:ItemList[] = await openModal(imagesInputValues);
-
+    const selected:ItemList[] = await openImageModal([]);
     for (let i = 0; i < selected.length; i++) {
       imagesInputValues.push(selected[i]);
     }
   }
 
-  async function handleBtnRemoveImage(imagePath:string) {
-    imagesInputValues = imagesInputValues.filter(item => item.path != imagePath);
+  function handleBtnRemoveImage(path:string) {
+    imagesInputValues = imagesInputValues.filter(item => item.path != path);
   }
 
-  async function handleBtnSelectAttributeValue(index:number, valueId:number) {
-    selectedAttributeValues[index] = valueId;
+  function handleBtnAddAttribute() {
+    const name = prompt("Nome do atributo: (Ex: Cor, Tamanho)");
+    if (name == undefined || name == "") {
+      return;
+    }
+
+    if (attributes.find(item => item.name == name) != undefined) {
+      return;
+    }
+
+    attributes.push({name:name, values:[], showImage:false});
   }
 
-  async function sendNewPage():Promise<Boolean> {
-    const request:NewPageRequest = {title:titleInputValue, slug:slugInputValue, shortDescription:shortDescInputValue, description:descInputValue};
+  function handleBtnAddAttributeValue(attributeIndex:number) {
+    const value = prompt("Valor do atributo: (Ex: Verde, Pequeno)");
+    if (value == undefined || value == "") {
+      return;
+    }
+
+    if (attributes[attributeIndex].values.find(item => item == value)) {
+      return;
+    }
+
+    attributes[attributeIndex].values.push(value);
+  }
+
+  function handleBtnAttributeImageToogle(attributeIndex:number) {
+    attributes[attributeIndex].showImage = !attributes[attributeIndex].showImage;
+  }
+
+  function handleBtnRemoveAttribute(name:string) {
+    attributes = attributes.filter(item => item.name != name);
+
+    if (attributes.length == 0) {
+      products = [];
+    }
+  }
+
+  function handleBtnRemoveAttributeValue(value:string, attributeIndex:number) {
+    attributes[attributeIndex].values = attributes[attributeIndex].values.filter(item => item != value);
+  }
+
+  async function handleBtnAddProductImage(productIndex:number) {
+    const selected = await openImageModal([]);
+    if (selected == undefined || selected.length == 0) {
+      return;
+    }
+
+    products[productIndex].imagePath = selected[0].path;
+  }
+
+  function handleBtnAddProduct() {
+    products.push(newProductBlank());
+  }
+
+  function onCloseAttributeModal(closeFunc:any) {
+    for (let i = 0; i < attributes.length; i++) {
+      if (attributes[i].values.length == 0) {
+        alert("Cada atributo deve conter pelo menos 1 valor!");
+        return;
+      }
+    }
+    closeFunc();
+    updateState();
+  }
+
+  function handleBtnRemoveProduct(index:number) {
+    if (products.length == 1) {
+      return;
+    }
+
+    products = products.filter((item, i) => i != index);
+  }
+
+  async function handleBtnFinalAdd() {
+    if (titleInputValue == "" || slugInputValue == "" || imagesInputValues.length < 1) {
+      alert("Preencha os campos (title e slug) e selecione pelo menos 1 imagem!");
+      return;
+    }
+
+    let request:NewPageRequest = {title: titleInputValue, slug: slugInputValue, shortDescription: shortDescInputValue, description: descInputValue, products: [], attributes: [], images: []};
+    
+    let newProducts:NewProductRequest[] = [];
+    if (products.length > 0) {
+      for (let i = 0; i < products.length; i++) {
+        if (products[i].imagePath == "" || products[i].price == "" || products[i].startStock == "" || products[i].values.length != attributes.length) {
+          alert("Para cada produto preencha todos os campos e selecione um valor para cada atributo!")
+          return;
+        }
+
+        newProducts.push({price: products[i].price, stock: products[i].startStock, imagePath: products[i].imagePath, values: products[i].values})
+      }
+    }else {
+      newProducts.push({price: priceInputValue, stock: startStockInputValue, imagePath: "", values: []})
+    }
+    request.products = newProducts;
+
+    let newAttributes:NewAttributeRequest[] = [];
+    for (let i = 0; i < attributes.length; i++) {
+      let newValues:NewAttributeValueRequest[] = [];
+      for (let j = 0; j < attributes[i].values.length; j++) {
+        newValues.push({value:attributes[i].values[j]});
+      }
+
+      newAttributes.push({name:attributes[i].name, showImage:attributes[i].showImage, values:newValues});
+    }
+    request.attributes = newAttributes;
+
+    let images:NewPageImageRequest[] = [];
+    for (let i = 0; i < imagesInputValues.length; i++) {
+      images.push({index:i, path:imagesInputValues[i].path});
+    }
+    request.images = images;
 
     const resp = await requestNewPage(request);
     if (resp != undefined && resp.success) {
-      pageId = resp.data.id;
-      for (let i = 0; i < imagesInputValues.length; i++) {
-        const image_request:NewPageImageRequest = {pageId:pageId, index:i, path:imagesInputValues[i].path};
-
-        const image_resp = await requestNewPageImage(image_request);
-        if (image_resp == undefined || !image_resp.success) {
-          return false;
-        }
-      }
-      return true;
+      alert(`Produto ${titleInputValue} - id:${resp.data.id} - Adicionado !`);
     }
-
-    return false;
-  }
-
-  async function sendNewAttribute():Promise<Boolean> {
-    if (page != undefined) {
-      const request:NewAttributeRequest = {pageId:page.id, name:attributeInputValue};
-
-      const resp = await requestNewAttribute(request);
-      if (resp != undefined && resp.success) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  async function sendNewAttributeValue(attributeId:number, value:string):Promise<Boolean> {
-    if (page != undefined) {
-      const request:NewAttributeValueRequest = {attributeId:attributeId, value};
-
-      const resp = await requestNewAttributeValue(request);
-      if (resp != undefined && resp.success) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  async function sendNewProduct():Promise<Boolean> {
-    if (page != undefined) {
-      const request:NewProductRequest = {pageId:page.id, price:priceInputValue, imagePath:""};
-
-      if (productImageInput != undefined) {
-        request.imagePath = productImageInput.path;
-      }
-
-      const resp = await requestNewProduct(request);
-      if (resp != undefined && resp.success) {
-        for (let i = 0; i < selectedAttributeValues.length; i++) {
-          const requestValue:NewProductValueRequest = {productId:resp.data.id, attributeValueId:selectedAttributeValues[i]};
-          const respValues = await requestNewProductValue(requestValue);
-          if (respValues == undefined || !respValues.success) {
-            return false;
-          }
-        }
-        return true;
-      }
-    }
-    return false;
-  }
-
-  async function reloadState() {
-    if (pageId != undefined) {
-      const response = await requestSelectPage({id:pageId})
-      if (response != undefined && response.success) {
-        page = response.data;
-
-        titleInputValue = page.title;
-        slugInputValue = page.slug;
-        shortDescInputValue = page.shortDescription;
-        descInputValue = page.description;
-
-        imagesInputValues = [];
-        for (let i = 0; i < page.images.length; i++) {
-          for (let j = 0; j < page.images.length; j++) {
-            if (page.images[i].index == j) {
-              console.log(page.images[j].index);
-              imagesInputValues.push({isDir:false,name:"",path:page.images[j].path});
-              break;
-            }
-          }
-        }
-
-        const start_attribute = "";
-        attributeValueInputValues.fill(start_attribute, page.attributes.values.length);
-
-        const start_index = -1;
-        selectedAttributeValues.fill(start_index, page.attributes.length);
-      }
-    }
-  }
-
-  async function handleBtnNext() {
-    if (currentStep == STEP.PAGE) {
-      if (titleInputValue != "" && slugInputValue != "") {
-        await sendNewPage();
-        await reloadState();
-        currentStep = STEP.ATTRIBUTE;
-      }else {
-        alert("Os campos titulo e Slug sao obrigatorios!");
-      }
-    }else if (currentStep == STEP.ATTRIBUTE) {
-      if (page == undefined) {
-        return;
-      }
-
-      for (let i = 0; i < page.attributes.length; i++) {
-        if (page.attributes[i].values.length < 1) {
-          alert("Cada atributo deve conter pelo menos 1 valor!");
-          return;
-        }
-      }
-      currentStep = STEP.PRODUCT;
-    }else {
-      window.location.href = ("/admin/product-manager");
-    }
-  }
-
-  async function handleBtnBack() {
-    reloadState();
-    if (currentStep == STEP.PRODUCT) {
-      currentStep = STEP.ATTRIBUTE;
-    }else if (currentStep == STEP.ATTRIBUTE) {
-      currentStep = STEP.PAGE;
-    }
-  }
-
-  async function handleBtnAddAttribute() {
-    if (attributeInputValue != "") {
-      await sendNewAttribute();
-      attributeInputValue = "";
-      reloadState();
-    }else {
-      alert("Preencha o campo atributo!");
-    }
-  }
-
-  async function handleBtnAddAttributeValue(attributeId:number, input_index:number) {
-    const result = await sendNewAttributeValue(attributeId, attributeValueInputValues[input_index]);
-    if (!result) {
-      alert("Erro!");
-      return;
-    }
-    alert("Atributo adicionado!");
-    attributeValueInputValues[input_index] = "";
-    await reloadState();
-  }
-
-  const formatarValorDouble = (valor: string): string => {
-    if (typeof valor !== 'string' || !valor) {
-      return '';
-    }
-
-    // 1. Remove tudo que não for dígito, vírgula ou ponto.
-    // Ex: "R$ 1.234,56" -> "1.234,56"
-    let stringLimpa = valor.replace(/[^0-9,.]/g, '');
-
-    // 2. Troca todas as vírgulas por pontos.
-    // Ex: "1.234,56" -> "1.234.56"
-    stringLimpa = stringLimpa.replace(/,/g, '.');
-
-    // 3. Garante que apenas o último ponto permaneça, para o caso de haver
-    //    separadores de milhar.
-    // Ex: "1.234.56" -> o resultado deve ser "1234.56"
-    const partes = stringLimpa.split('.');
-
-    // Se houver mais de um ponto na string...
-    if (partes.length > 1) {
-      // Pega todas as partes antes da última e junta (removendo os pontos)
-      const parteInteira = partes.slice(0, -1).join('');
-      // Pega a última parte, que é a parte decimal
-      const parteDecimal = partes[partes.length - 1];
-      // Junta tudo novamente no formato correto
-      return `${parteInteira}.${parteDecimal}`;
-    }
-
-    // Se não houver pontos (ou apenas um), retorna a string como está.
-    return stringLimpa;
-  };
-
-  function handleFormatPrice(event:Event) {
-    const input = event.target as HTMLInputElement;
-
-    input.value = formatarValorDouble(input.value);
-    priceInputValue = input.value;
-  }
-
-  async function handleBtnSelectProductImage() {
-    const selected:ItemList[] = await openModal(imagesInputValues);
-    productImageInput = selected[0];
-  }
-
-  async function handleBtnAddProduct() {
-    if (priceInputValue == "") {
-      alert("Campo preco e obrigatorio!");
-      return;
-    }
-
-    if (page == undefined || selectedAttributeValues.length != page.attributes.length) {
-      alert("Selecione os atributos!");
-      return;
-    }
-
-    for (let i = 0; i < selectedAttributeValues.length; i++) {
-      if (selectedAttributeValues[i] == -1) {
-        alert("Selecione os atributos!");
-        return;
-      }
-    }
-
-    const result = await sendNewProduct();
-    if (!result) {
-      alert("Erro!");
-      return;
-    }
-    console.log("Produto adicionado!");
-    selectedAttributeValues = [];
-    await reloadState();
   }
 </script>
-
-<UploadModal bind:openModal={openModal}></UploadModal>
-<AdminHeader link={"/admin/product-manager"}></AdminHeader>
-{#if currentStep == STEP.PAGE}
-<div class="w-full flex justify-center mt-6">
-  <div class="flex flex-col w-2/3 border border-gray-500 p-2">
-    {#if pageId == undefined}
-    <span class="text-lg mb-4">Adicionar pagina de produto</span>
-    {:else}
-    <span class="text-lg mb-4">Atualizar pagina de produto</span>
-    {/if}
-    <span class="mt-2">Titulo*:</span>
-    <input bind:value={titleInputValue} type="text" name="title" class="border border-gray-500 w-full p-1">
-    <span class="mt-2">Slug*:</span>
-    <input bind:value={slugInputValue} type="text" name="slug" class="border border-gray-500 w-full p-1">
-    <span class="mt-2">Descricao curta:</span>
-    <textarea bind:value={shortDescInputValue} name="shortDesc" class="border border-gray-500 w-full p-1"></textarea>
-    <span class="mt-2">Descricao:</span>
-    <textarea bind:value={descInputValue} name="desc" class="border border-gray-500 w-full p-1"></textarea>
-    <div class="w-full flex flex-col border border-gray-500 p-2 mt-2">
-      <button onclick={handleBtnSelectImages} class="cursor-pointer text-blue-500">Adicionar imagens</button>
-      <div class="flex flex-wrap mt-2">
-        {#each imagesInputValues as imageItem, i}
-        <div class="w-20 h-20 m-2">
-          <div class="absolute">
-            <button onclick={() => {handleBtnRemoveImage(imageItem.path)}} class="absolute ml-2 p-1 text-red-500 cursor-pointer">
-              <Icon src={BsXLg}></Icon>
+<UploadModal bind:openModal={openImageModal}></UploadModal>
+<CustonModal bind:openModalFunc={openCustonModal} onBtnClose={onCloseAttributeModal} custonClass="w-100 p-2 flex flex-col">
+  <span>Adicionar atributos</span>
+  {#each attributes as attribute, i}
+    <CustonPanel custonClass="mt-2">
+      <div class="w-full flex justify-end">
+        <button onclick={() => {handleBtnRemoveAttribute(attribute.name)}} class="text-red-500 absolute cursor-pointer">
+          <Icon src={BsTrashFill}></Icon>
+        </button>
+      </div>
+      <span>{attribute.name}</span>
+      <div class="flex items-center">
+        <span>Mostrar imagem:</span>
+        <button class="cursor-pointer ml-2" onclick={() => {handleBtnAttributeImageToogle(i)}}>
+        {#if attribute.showImage}
+          <Icon src={BsCheckSquare}></Icon>
+        {:else}
+          <Icon src={BsSquare}></Icon>
+        {/if}
+      </button>
+      </div>
+      <div class="mt-2 ml-2 flex flex-col">
+        {#each attribute.values as value}
+          <div class="w-full flex justify-end">
+            <button onclick={() => {handleBtnRemoveAttributeValue(value, i)}} class="text-red-500 absolute cursor-pointer mr-4">
+              <Icon src={BsTrashFill}></Icon>
             </button>
-            <span>{i}</span>
           </div>
-          <img class="w-full h-full rounded-lg mr-2" src={formatViewImagePath(imageItem.path)} alt="imagem">
-        </div>
+          <span>{value}</span>
         {/each}
+        <CustonButton onclick={() => {handleBtnAddAttributeValue(i)}} custonClass="mt-2 text-emerald-700" title="Adicionar valor"></CustonButton>
       </div>
-    </div>
-    <div class="w-full flex justify-end mt-6">
-      <button onclick={handleBtnNext} class="p-2 border border-emerald-500 text-black cursor-pointer">
-        <span>Proximo</span>
-      </button>
-    </div>
-  </div>
-</div>
-{:else if currentStep == STEP.ATTRIBUTE}
+    </CustonPanel>
+  {/each}
+  <CustonButton onclick={handleBtnAddAttribute} custonClass="mt-6 text-emerald-700" title="Adicionar atributo"></CustonButton>
+</CustonModal>
+<AdminHeader link={"/admin/product-manager"}></AdminHeader>
 <div class="w-full flex justify-center mt-6">
-  <div class="flex flex-col w-2/3 border border-gray-500 p-2">
-    <div class="flex w-full">
-      <div class="basis-lg">
-        <span class="text-lg mb-4">Adicionar atributo:</span>
-        <div class="w-full mt-2">
-          <input bind:value={attributeInputValue} type="text" name="attribute" id="" class="border border-gray-500 p-1" placeholder="Cor">
-          <button onclick={handleBtnAddAttribute} class="ml-2 border border-gray-500 p-1 cursor-pointer">Adicionar</button>
-        </div>
-      </div>
-      <div class="basis-lg">
-        <span class="text-lg mb-4">Valores do atributo:</span>
-        {#each page?.attributes as attribute, i}
-          <div class="w-full mt-2">
-            <div class="mt-2">
-              <span>{attribute.name}:</span>
-              {#each attribute.values as value}
-                <span>{value.value}</span>
-                <span class="m-2">-</span>
-              {/each}
+  <CustonPanel custonClass="mb-2 w-2/3">
+    {#if pageId == undefined}
+    <span class="text-lg mb-4">Adicionar produto</span>
+    {:else}
+    <span class="text-lg mb-4">Atualizar produto</span>
+    {/if}
+    <TextInput custonClass="mt-2" title="Titulo" bind:value={titleInputValue}></TextInput>
+    <TextInput custonClass="mt-2" title="Slug" bind:value={slugInputValue}></TextInput>
+    <CustonPanel custonClass="mt-2">
+      <CustonButton onclick={handleBtnSelectImages} title="Selecionar imagens"></CustonButton>
+      <div class="flex flex-row mt-2">
+        {#each imagesInputValues as image, i}
+          <div class="w-20 h-20 mr-2">
+            <div class="flex justify-end">
+              <button onclick={() => {handleBtnRemoveImage(image.path)}} class="absolute p-1 cursor-pointer text-red-500">
+                <Icon src={BsXLg}></Icon>
+              </button>
             </div>
-            <input bind:value={attributeValueInputValues[i]} type="text" name="attribute" id="" class="border border-gray-500 p-1" placeholder="Azul">
-            <button onclick={() => {handleBtnAddAttributeValue(attribute.id, i)}} class="ml-2 border border-gray-500 p-1 cursor-pointer">Adicionar</button>
+            <span class="absolute p-1">{i}</span>
+            <img class="w-full h-full  rounded-sm shadow-sm" src={formatViewImagePath(image.path)} alt="">
           </div>
         {/each}
       </div>
-    </div>
-    <div class="w-full flex justify-between mt-6">
-      <button onclick={handleBtnBack} class="p-2 border border-emerald-500 text-black cursor-pointer">
-        <span>Voltar</span>
-      </button>
-      <button onclick={handleBtnNext} class="p-2 border border-emerald-500 text-black cursor-pointer">
-        <span>Proximo</span>
-      </button>
-    </div>
-  </div>
-</div>
-{:else if currentStep == STEP.PRODUCT}
-<div class="w-full flex justify-center mt-6">
-  <div class="flex flex-col w-2/3 border border-gray-500 p-2">
-    <div class="flex w-full">
-      <div class="basis-lg">
-        <span class="text-lg mb-6">Adicionar produto:</span>
-        <div class="flex flex-col w-full mt-2">
-          <span>Preco*:</span>
-          <input onchange={handleFormatPrice} type="text" name="attribute" id="" class="border border-gray-500 p-1" placeholder="199.99">
-        </div>
-        <div class="border border-gray-500 pl-2 mt-2"> 
-          {#each page?.attributes as attribute, i}
-            <div class="mt-2">
-              <span>{attribute.name}</span>
-              <div class="flex flex-wrap">
-                {#each attribute.values as value}
-                  {#if selectedAttributeValues[i] != value.id}
-                  <button onclick={() => {handleBtnSelectAttributeValue(i, value.id)}} class="border border-gray-500 p-1 cursor-pointer m-1">{value.value}</button>
-                  {:else}
-                  <button onclick={() => {handleBtnSelectAttributeValue(i, value.id)}} class="border-3 border-black p-1 cursor-pointer m-1">{value.value}</button>
-                  {/if}
-                {/each}
-              </div>
-            </div>
-          {/each}
-        </div>
-        <div class="mt-2 w-full border border-gray-500 p-2">
-          <button onclick={handleBtnSelectProductImage} class=" text-blue-500 cursor-pointer">Selecionar imagem</button>
-          {#if productImageInput != undefined}
-            <img class="w-15 h-15 rounded border border-gray-500" src={formatViewImagePath(productImageInput.path)} alt="imagem">
-          {/if}
-        </div>
-        <button onclick={() => {handleBtnAddProduct()}} class="mt-2 p-2 border border-gray-500 text-black cursor-pointer">
-        <span>Adicionar</span>
-      </button>
-      </div>
-      <div class="basis-lg ml-2">
-        <span class="text-lg mb-4">Produtos:</span>
-        {#each page?.products as product}
-          <div class="mt-2 flex w-full items-center">
-            {#if product.imagePath != ""}
-              <img class="w-10 h-10 rounded-lg mr-2" src={formatViewImagePath(product.imagePath)} alt="i">
+    </CustonPanel>
+    <TextArea custonClass="mt-2" title="Descricao curta" bind:value={shortDescInputValue}></TextArea>
+    <TextArea custonClass="mt-2" title="Descricao" bind:value={descInputValue}></TextArea>
+    <div class="w-full h-1 bg-gray-500 rounded-lg mt-2 mb-2"></div>
+    <CustonPanel>
+      <CustonButton onclick={() => {openCustonModal()}} title="Adicionar atributos"></CustonButton>
+    </CustonPanel>
+    {#if products.length == 0}
+    <TextInput bind:value={priceInputValue} custonClass="mt-2 w-1/5" title="Preco"></TextInput>
+    <TextInput bind:value={startStockInputValue} custonClass="mt-2 w-1/5" title="Estoque inicial"></TextInput>
+    {:else}
+      {#each products as product, i}
+        <CustonPanel custonClass="mt-2">
+          <div class="w-full flex justify-end">
+            <button onclick={() => {handleBtnRemoveProduct(i)}} class="absolute text-red-600 cursor-pointer">
+              <Icon src={BsTrashFill}></Icon>
+            </button>
+          </div>
+          <TextInput bind:value={product.price} custonClass="mt-2 w-1/5" title="Preco"></TextInput>
+          <TextInput bind:value={product.startStock} custonClass="mt-2 w-1/4" title="Estoque inicial"></TextInput>
+          <CustonPanel custonClass="mt-2">
+            <span>Imagem:</span>
+            {#if product.imagePath == ""}
+            <CustonButton onclick={() => {handleBtnAddProductImage(i)}} custonClass="text-emerald-700" title="Adicionar imagem"></CustonButton>
             {:else}
-              <div class="w-10 h-10 mr-2"></div>
+            <img src={formatViewImagePath(product.imagePath)} class="w-15 h-15 rounded-sm shadow-sm" alt="">
+            <CustonButton onclick={() => {handleBtnAddProductImage(i)}} custonClass="text-emerald-700 mt-2" title="Alterar imagem"></CustonButton>
             {/if}
-            <span class="">{product.price}</span>
-            {#each product.values as value}
-              <span class="ml-2">{value.value}</span>
+          </CustonPanel>
+          <CustonPanel custonClass="mt-2">
+            <span class="mr-2">Atributos:</span>
+            {#each attributes as attribute, i}
+              <CustonPanel custonClass="mt-2 flex-row items-center">
+                <span>{attribute.name}:</span>
+                {#each attribute.values as value, j}
+                  <div class="mr-2">
+                    {#if product.values[i] == value}
+                      <CustonButton onclick={() => {product.values[i] = value}} custonClass="text-emerald-700" title={value}></CustonButton>
+                    {:else}
+                      <CustonButton onclick={() => {product.values[i] = value}} custonClass="text-red-700" title={value}></CustonButton>
+                    {/if}
+                  </div>
+                {/each}
+              </CustonPanel>
             {/each}
-          </div>
-        {/each}
-      </div>
+          </CustonPanel>
+        </CustonPanel>
+      {/each}
+      <CustonButton onclick={handleBtnAddProduct} custonClass="mt-2" title="Adicionar variacao"></CustonButton>
+    {/if}
+    <div class="w-full flex justify-end mt-2">
+      <CustonButton onclick={handleBtnFinalAdd} title="Adicionar" custonClass={"text-emerald-700"}></CustonButton>
     </div>
-    <div class="w-full flex justify-between mt-6">
-      <button onclick={handleBtnBack} class="p-2 border border-emerald-500 text-black cursor-pointer">
-        <span>Voltar</span>
-      </button>
-      <button onclick={handleBtnNext} class="p-2 border border-emerald-500 text-black cursor-pointer">
-        <span>Finalizar</span>
-      </button>
-    </div>
-  </div>
+  </CustonPanel>
 </div>
-{/if}
