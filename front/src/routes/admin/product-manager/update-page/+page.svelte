@@ -7,9 +7,10 @@
   import CustonPanel from "$lib/admin/ProductManager/CustonPanel.svelte";
   import TextArea from "$lib/admin/ProductManager/TextArea.svelte";
   import TextInput from "$lib/admin/ProductManager/TextInput.svelte";
-  import { requestNewPage, requestSelectPage, type NewAttributeRequest, type NewAttributeValueRequest, type NewPageImageRequest, type NewPageRequest, type NewProductRequest, type ProductPageResponse, type UpdateProductPageRequest } from "$lib/admin/request";
+  import { requestNewPage, requestSelectPage, requestUpdatePage, type NewAttributeRequest, type NewAttributeValueRequest, type NewPageImageRequest, type NewPageRequest, type NewProductRequest, type ProductPageResponse, type UpdateAttributeRequest, type UpdateAttributeValueRequest, type UpdateProductPageRequest, type UpdateProductRequest } from "$lib/admin/request";
   import AdminHeader from "$lib/components/admin_header.svelte";
   import type { ItemList } from "$lib/fileServer";
+    import type { AttributeValueResponse, ProductValueResponse } from "$lib/request";
   import { onMount } from "svelte";
   import { Icon } from "svelte-icons-pack";
   import { BsArrowClockwise, BsCheckSquare, BsSquare, BsTrashFill, BsXLg } from "svelte-icons-pack/bs";
@@ -106,6 +107,8 @@
       }
       products.push({id:product.id, values:values, price:String(product.price), stock:String(product.stock), imagePath:product.imagePath, active:product.active})
     }
+
+    currentPage = resp.data;
   })
 
   function newProductBlank():Product {
@@ -271,40 +274,110 @@
     products[index].active = true;
   }
 
-  function handleBtnFinalUpdate() {
+  async function handleBtnFinalUpdate() {
     if (currentPage == undefined) {
       return;
     }
 
     let request:UpdateProductPageRequest = {id:currentPage.id, title:titleInputValue, slug:slugInputValue, 
       shortDescription: shortDescInputValue, description: descInputValue, 
-      products:[], attributes:[], images:[], updateProducts: [], updateAttribute: [], 
+      products:[], attributes:[], images:[], updateProducts: [], updateAttributes: [], 
       updateAttributeValues: []}
 
-    let deactivateProducts = [];
-    for (let i = 0; i < products.length; i++) {
-      const product = products[i];
-      if (product.id != -1 && !product.active && currentPage.products[i].active) {
-        deactivateProducts.push(product.id);
+    let compareProductValues = (arr1:ProductValueResponse[], arr2:string[]) => {
+      if (arr1.length != arr2.length) {
+        return false;
       }
+
+      for (let i = 0; i < arr1.length; i++) {
+        if (arr1[i].value != arr2[i]) {
+          return false;
+        }
+      }
+
+      return true;
     }
 
-    let deactivateAttributes = [];
-    let deactivateAttributeValues = [];
+    let newProducts:NewProductRequest[] = [];
+    let updateProducts:UpdateProductRequest[] = [];
+    for (let i = 0; i < products.length; i++) {
+      const product = products[i];
+      if (product.id == -1) {
+        newProducts.push({price:product.price, stock:product.stock, imagePath: product.imagePath, values: product.values});
+      } else {
+        if (product.price != String(currentPage.products[i].price) || product.stock != String(currentPage.products[i].stock)
+            || product.imagePath != currentPage.products[i].imagePath || product.active != currentPage.products[i].active
+            || !compareProductValues(currentPage.products[i].values, product.values)) {
+          updateProducts.push({id:product.id, price:product.price, stock:product.stock, imagePath:product.imagePath, values:product.values, active:product.active});
+        }
+      }
+    }
+    request.products = newProducts;
+    request.updateProducts = updateProducts;
+
+    let compareAttributeValues = (values1:AttributeValue[], values2:AttributeValueResponse[]) => {
+      if (values1.length != values2.length) {
+        return false;
+      }
+
+      for (let i = 0; i < values1.length; i++) {
+        if (values1[i].value != values2[i].value) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
+    let newAttributes:NewAttributeRequest[] = [];
+    let updateAttributes:UpdateAttributeRequest[] = [];
+    let updateAttributeValues:UpdateAttributeValueRequest[] = [];
     for (let i = 0; i < attributes.length; i++) {
       const attribute = attributes[i];
-      if (attribute.id != -1 && !attribute.active && currentPage.attributes[i].active) {
-        deactivateAttributes.push(attribute.id);
-      } else {
+      if (attribute.id == -1) {
+        let newValues:NewAttributeValueRequest[] = []
         for (let j = 0; j < attribute.values.length; j++) {
           const value = attribute.values[j];
-          if (value.id != -1 && !value.active && currentPage.attributes[i].values[j].active) {
-            deactivateAttributeValues.push(value.id);
+          newValues.push({value:value.value});
+        }
+        newAttributes.push({name:attribute.name, values:newValues, showImage:attribute.showImage});
+      }else {
+        if (attribute.name != currentPage.attributes[i].name || attribute.showImage != currentPage.attributes[i].showImage
+            || attribute.active != currentPage.attributes[i].active 
+            || !compareAttributeValues(attribute.values, currentPage.attributes[i].values)) {
+          let newValues:NewAttributeValueRequest[] = [];
+          for (let j = 0; j < attribute.values.length; j++) {
+            const value = attribute.values[j];
+            if (value.id == -1) {
+              newValues.push({value:value.value});
+            }else {
+              if (value.value != currentPage.attributes[i].values[j].value || value.active != currentPage.attributes[i].values[j].active) {
+                updateAttributeValues.push({id:value.id, value:value.value, active:value.active})
+              }
+            }
           }
         }
       }
     }
+    request.attributes = newAttributes;
+    request.updateAttributes = updateAttributes;
+    request.updateAttributeValues = updateAttributeValues;
 
+    let images:NewPageImageRequest[] = [];
+    for (let i = 0; i < imagesInputValues.length; i++) {
+      const image = imagesInputValues[i];
+      images.push({index:i, path:image.path});
+    }
+    request.images = images;
+
+    console.log(request);
+
+    /*
+    const resp = await requestUpdatePage(request);
+    if (resp != undefined && resp.success) {
+      alert("Produto atualizado com sucesso!");
+    }
+    */
   }
 </script>
 <UploadModal bind:openModal={openImageModal}></UploadModal>
@@ -442,7 +515,7 @@
       <CustonButton onclick={handleBtnAddProduct} custonClass="mt-2" title="Adicionar variacao"></CustonButton>
     {/if}
     <div class="w-full flex justify-end mt-2">
-      <CustonButton title="Atualizar" custonClass={"text-emerald-700"}></CustonButton>
+      <CustonButton onclick={handleBtnFinalUpdate} title="Atualizar" custonClass={"text-emerald-700"}></CustonButton>
     </div>
   </CustonPanel>
 </div>

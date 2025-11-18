@@ -83,7 +83,7 @@ export interface UpdateProductPageRequest {
   attributes:NewAttributeRequest[];
   images:NewPageImageRequest[];
   updateProducts:UpdateProductRequest[];
-  updateAttribute:UpdateAttributeRequest[];
+  updateAttributes:UpdateAttributeRequest[];
   updateAttributeValues:UpdateAttributeValueRequest[];
 }
 
